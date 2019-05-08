@@ -9,3 +9,7 @@ variable "kubeuser" {
 variable "kubepass" {
   description = "The kubernetes password"
 }
+
+variable "namespace" {
+  description = "The OpenShift project/namespace name"
+}

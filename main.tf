@@ -4,16 +4,16 @@ provider "kubernetes" {
 #  password = "${var.kubepass}"
 }
 
-resource "kubernetes_namespace" "vault-deploy" {
+resource "kubernetes_namespace" "vault_deploy" {
   metadata {
     annotations {
-      name = "vault-deploy"
+      name = "${var.namespace}"
     }
 
     labels {
       app = "vault"
     }
-    name = "vault-deploy"
+    name = "${var.namespace}"
   }
 }
 
@@ -23,7 +23,7 @@ resource "kubernetes_service" "consul" {
       app =  "consul"
     },
     name = "consul",
-    namespace = "vault-deploy"
+    namespace = "${var.namespace}"
   },
   spec  {
     selector  {
@@ -96,7 +96,7 @@ resource "kubernetes_service" "consul" {
         app =  "vault"
       },
       name= "vault",
-      namespace= "vault-deploy"
+      namespace= "${var.namespace}"
     },
     spec= {
       port = [
@@ -118,7 +118,7 @@ resource "kubernetes_service" "consul" {
   resource "kubernetes_config_map" "vault" {
   "metadata"= {
     "name"= "vault",
-    "namespace"= "vault-deploy"
+    "namespace"= "${var.namespace}"
   }
   data {
   vault.hcl = "storage \"consul\" {\n address = \"127.0.0.1:8500\"\n path = \"vault/\"\n }\nlistener \"tcp\" {\n  address = \"0.0.0.0:8200\"\n  tls_disable = \"true\"\n}\ndisable_mlock=\"true\"\ndisable_cache=\"true\"\nui = \"true\"\n\nmax_least_ttl=\"10h\"\ndefault_least_ttl=\"10h\"\nraw_storage_endpoint=true\ncluster_name=\"mycompany-vault\"\n"
@@ -128,14 +128,14 @@ resource "kubernetes_service" "consul" {
   resource "kubernetes_service_account" "privilegeduser" {
     metadata {
       name = "privilegeduser"
-      namespace = "vault-deploy"
+      namespace = "${var.namespace}"
     }
   }
 
   resource "kubernetes_stateful_set" "consul"{
     metadata= {
       name= "consul",
-      namespace= "vault-deploy",
+      namespace= "${var.namespace}",
     },
     spec= {
       pod_management_policy= "OrderedReady",
@@ -161,7 +161,7 @@ resource "kubernetes_service" "consul" {
                 "-advertise=$(POD_IP)",
                 "-bind=0.0.0.0",
                 "-bootstrap-expect=1",
-                "-retry-join=consul-0.consul.vault-deploy.svc.cluster.local",
+                "-retry-join=consul-0.consul.${var.namespace}.svc.cluster.local",
                 "-client=0.0.0.0",
                 "-datacenter=dc1",
                 "-data-dir=/consul/data",
@@ -290,7 +290,7 @@ resource "kubernetes_service" "consul" {
         "app"= "vault"
       },
       "name"= "vault",
-      "namespace"= "vault-deploy",
+      "namespace"= "${var.namespace}",
     },
     "spec"= {
       "pod_management_policy"= "OrderedReady",
@@ -385,7 +385,7 @@ resource "kubernetes_service" "consul" {
             {
               "args"= [
                 "agent",
-                "-retry-join=consul-0.consul.vault-deploy.svc.cluster.local",
+                "-retry-join=consul-0.consul.${var.namespace}.svc.cluster.local",
                 "-domain=cluster.local",
                 "-datacenter=dc1",
                 "-disable-host-node-id",
@@ -464,8 +464,14 @@ resource "kubernetes_service" "consul" {
     }
   }
 
-  resource "null_resource" "routes" {
+  resource "null_resource" "consul_route" {
   provisioner "local-exec" {
-    command = "oc create -f routes.yaml"
+    command = "oc expose service consul --port=8500 --hostname=consul-${var.namespace}.apps.home.lab"
   }
+}
+
+resource "null_resource" "vault_route" {
+provisioner "local-exec" {
+  command = "oc expose service vault --port=8200 --hostname=vault-${var.namespace}.apps.home.lab"
+}
 }
