@@ -10,6 +10,13 @@ You will need to define the follow variables
 
 "kubepass" = The kubernetes password.
 
-*NOTE:* Kubernetes user/passwould should not be required if you have an existing OpenShift token
+*NOTE: Kubernetes user/passwould should not be required if you have an existing OpenShift token*
 
 "namespace" = The OpenShift project/namespace name you will be creating to deploy Vault in.  
+
+Once those are defined, simply run:
+
+```sh
+$ terraform init
+$ terraform apply
+```
