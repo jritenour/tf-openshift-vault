@@ -1,7 +1,5 @@
 provider "kubernetes" {
   host = "${var.kubehost}"
-#  username = "${var.kubeuser}"
-#  password = "${var.kubepass}"
 }
 
 resource "kubernetes_namespace" "vault_deploy" {
@@ -131,6 +129,12 @@ resource "kubernetes_service" "consul" {
       namespace = "${var.namespace}"
     }
   }
+
+  resource "null_resource" "priv_scc" {
+  provisioner "local-exec" {
+    command = "oc adm policy add-scc-to-user privileged  -z privilegeduser ${var.namespace}"
+  }
+}
 
   resource "kubernetes_stateful_set" "consul"{
     metadata= {
@@ -466,12 +470,12 @@ resource "kubernetes_service" "consul" {
 
   resource "null_resource" "consul_route" {
   provisioner "local-exec" {
-    command = "oc expose service consul --port=8500 --hostname=consul-${var.namespace}.apps.home.lab"
+    command = "oc expose service consul --port=8500 --hostname=consul-${var.namespace}.${var.app_domain} -n ${var.namespace}"
   }
 }
 
 resource "null_resource" "vault_route" {
 provisioner "local-exec" {
-  command = "oc expose service vault --port=8200 --hostname=vault-${var.namespace}.apps.home.lab"
+  command = "oc expose service vault --port=8200 --hostname=vault-${var.namespace}.${var.app_domain} -n ${var.namespace}"
 }
 }

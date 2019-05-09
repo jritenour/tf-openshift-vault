@@ -13,3 +13,7 @@ variable "kubepass" {
 variable "namespace" {
   description = "The OpenShift project/namespace name"
 }
+
+variable "app_domain" {
+  description = "The application domain name for openshift."
+}
