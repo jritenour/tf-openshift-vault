@@ -134,6 +134,7 @@ resource "kubernetes_service" "consul" {
   provisioner "local-exec" {
     command = "oc adm policy add-scc-to-user privileged  -z privilegeduser ${var.namespace}"
   }
+  depends_on = ["kubernetes_service_account.privilegeduser"]
 }
 
   resource "kubernetes_stateful_set" "consul"{
@@ -244,8 +245,8 @@ resource "kubernetes_service" "consul" {
                   protocol= "TCP"
                 }
               resources= {},
-              "termination_message_path"= "/dev/termination-log",
-              "volume_mount"= [
+              "termination_message_path" = "/dev/termination-log",
+              "volume_mount" = [
                 {
                   "mount_path"= "/consul/data",
                   name= "data"
